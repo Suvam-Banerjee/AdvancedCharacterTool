@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Advanced Character Tool</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <h1>Advanced Character Tool</h1>
+      <p class="subtitle">Generate, Remove, or Replace characters in text — modern, responsive UI.</p>
+    </header>
+
+    <!-- visible error banner (hidden by default) -->
+    <div id="errorBanner" class="error-banner hidden" role="alert" aria-live="assertive"></div>
+
+    <section class="editor">
+      <div class="textarea-wrap">
+        <label class="floating-label" for="mainText">Text</label>
+        <textarea id="mainText" rows="8" maxlength="10000" placeholder="Enter or paste text..."></textarea>
+        <div class="textarea-row">
+          <div class="char-count"><span id="len">0</span> chars</div>
+          <div class="textarea-actions">
+            <button id="copyBtn" class="btn small" type="button">Copy</button>
+            <button id="clearBtn" class="btn small secondary" type="button">Clear</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <div class="modes pill" role="tablist" aria-label="Modes">
+        <button class="mode active" data-mode="generate" role="tab">Generate</button>
+        <button class="mode" data-mode="remove" role="tab">Remove</button>
+        <button class="mode" data-mode="replace" role="tab">Replace</button>
+      </div>
+
+      <div id="optionsArea" class="options-area" aria-live="polite">
+        <!-- Dynamically injected controls depending on mode -->
+      </div>
+
+      <div class="apply-row">
+        <div id="errorBox" class="error" aria-live="polite"></div>
+        <button id="applyBtn" class="btn large primary" type="button">Apply</button>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <small>Built from provided specification. Responsive and accessible.</small>
+    </footer>
+  </main>
+
+  <!-- Modal for selecting character types (Modal_Char) -->
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-panel" role="document">
+      <header class="modal-header">
+        <h3 id="modalTitle">Choose character types</h3>
+        <button id="closeModal" class="icon-btn" aria-label="Close" type="button">&times;</button>
+      </header>
+
+      <div class="modal-body">
+        <div class="segmented small" role="tablist" aria-label="Select behavior">
+          <button class="seg-btn active" data-behavior="multiple" type="button">Multiple</button>
+          <button class="seg-btn" data-behavior="single" type="button">Single</button>
+        </div>
+
+        <form id="modalForm" class="modal-form">
+          <fieldset id="typesField">
+            <legend class="sr-only">Character types</legend>
+            <label class="type-row"><input type="checkbox" name="type" value="upper"> Uppercase (A-Z)</label>
+            <label class="type-row"><input type="checkbox" name="type" value="lower"> Lowercase (a-z)</label>
+            <label class="type-row"><input type="checkbox" name="type" value="digits"> Digits (0-9)</label>
+            <label class="type-row"><input type="checkbox" name="type" value="special"> Special (!@#...)</label>
+            <label class="type-row"><input type="checkbox" name="type" value="space"> Space</label>
+          </fieldset>
+          <div class="modal-actions">
+            <button type="button" id="modalApply" class="btn">Apply</button>
+            <button type="button" id="modalCancel" class="btn secondary">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full-screen overlay for generate confirmation -->
+  <div id="overlay" class="overlay hidden" role="dialog" aria-hidden="true">
+    <div class="overlay-panel">
+      <h3 id="overlayTitle">Existing Text Found</h3>
+      <p id="overlayMsg"></p>
+      <div id="overlayWarn" class="error small"></div>
+      <div class="overlay-actions">
+        <button id="overlayClear" class="btn secondary" type="button">Clear & Generate</button>
+        <button id="overlayContinue" class="btn primary" type="button">Continue (Append)</button>
+        <button id="overlayOK" class="btn" type="button" style="display:none">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="code.js"></script>
+</body>
+</html>
