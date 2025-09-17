@@ -399,16 +399,19 @@ function showInfo(msg) {
           content.appendChild(pairsDiv);
 
           content.getValues = function () {
-            var pairs = [];
-            var rows = pairsDiv.querySelectorAll('.pair-row');
-            Array.prototype.forEach.call(rows, function (pr) {
-              var inputs = pr.querySelectorAll('input');
-              var f = inputs[0] ? inputs[0].value : '';
-              var t = inputs[1] ? inputs[1].value : '';
-              if (f && f.trim().length) pairs.push({ from: f, t: t });
-            });
-            return { mode: 'custom', pairs: pairs };
-          };
+  var pairs = [];
+  var rows = pairsDiv.querySelectorAll('.pair-row');
+  Array.prototype.forEach.call(rows, function (pr) {
+    var inputs = pr.querySelectorAll('input');
+    var f = inputs[0] ? inputs[0].value : '';
+    var t = inputs[1] ? inputs[1].value : '';
+    // Keep spaces valid input → only skip truly empty strings
+    if (f !== '') {
+      pairs.push({ from: f, t: t });
+    }
+  });
+  return { mode: 'custom', pairs: pairs };
+};
         }
 
         selBtn.addEventListener('click', function () { selBtn.classList.add('active'); customBtn.classList.remove('active'); showSelection(); });
@@ -643,7 +646,7 @@ function showInfo(msg) {
 
   var need = append ? (targetFinal - existing.length) : targetFinal;
   if (need <= 0) {
-    return showError('Error: Nothing to generate (count is 0 or no space left).\n');
+    return showError('Error: Nothing to generate (count = 0 or no space left).\n');
   }
 
   var res = append ? existing : '';
@@ -656,7 +659,7 @@ function showInfo(msg) {
 
   var added = mainText.value.length - startLen;
   if (added === 0) {
-    return showError('Error: Nothing was generated (count is 0).\n');
+    return showError('Error: Nothing was generated.\n');
   }
 
   var msg = 'Generation successful: ' + added + ' characters added.\n';
@@ -748,7 +751,7 @@ function showInfo(msg) {
 
   var removed = before - out.length;
   if (removed === 0) {
-    return showError('Error: No characters were removed (count is 0).\n');
+    return showError('Error: No characters were removed.\n');
   }
 
   if (removed < 0) {
@@ -795,7 +798,7 @@ function showInfo(msg) {
     updateCharCount();
 
     if (replacedCount === 0) {
-      return showError('Error: No replacements were made (count = 0).\n');
+      return showError('Error: No replacements were made.\n');
     }
 
     showInfo('Replace successful: ' + replacedCount + ' replacements made.\n');
@@ -808,13 +811,17 @@ function showInfo(msg) {
     var replacedCount = 0;
 
     pairs.forEach(p => {
-      if (!p.from) return;
+      if (p.from == null || p.from.length === 0) return;
+
+      // Escape regex but keep spaces and all characters
       var esc = p.from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       var re = new RegExp(esc, 'g');
 
+      // Count matches first
       var matches = (txt.match(re) || []).length;
       replacedCount += matches;
 
+      // Replace them
       txt = txt.replace(re, p.t || '');
     });
 
@@ -822,7 +829,7 @@ function showInfo(msg) {
     updateCharCount();
 
     if (replacedCount === 0) {
-      return showError('Error: No replacements were made (count = 0).\n');
+      return showError('Error: No replacements were made.\n');
     }
 
     showInfo('Replace successful: ' + replacedCount + ' replacement(s) made.\n');
@@ -831,6 +838,7 @@ function showInfo(msg) {
     showError('Error: Unknown replace mode.\n');
   }
 }
+
 
 
 
