@@ -524,45 +524,66 @@ function showInfo(msg) {
       function handleGenerate() {
   var opts = optionsArea.firstChild && optionsArea.firstChild.getValues ? optionsArea.firstChild.getValues() : {};
   var types = opts.types || [], count = opts.count, full = opts.full;
-  if ((count == null || isNaN(count)) && (full == null || isNaN(full))) return showError('Error: Count and Full length cannot be empty at the same time.\n');
-  if (count != null && full != null && count > full) return showError('Error: Count is greater than Full length.\n');
-  if (!types || types.length === 0) return showError('Error: Select at least one character type.\n');
+
+  if ((count == null || isNaN(count)) && (full == null || isNaN(full))) {
+    return showError('Error: Count and Full length cannot be empty at the same time.\n');
+  }
+  if (!types || types.length === 0) {
+    return showError('Error: Select at least one character type.\n');
+  }
+
+  // Strict rule: if both Count and Full are given and Count > Full, stop
+  if (count != null && !isNaN(count) && full != null && !isNaN(full) && Number(count) > Number(full)) {
+    return showError('Error: Count is greater than Full length.\n');
+  }
 
   var existing = mainText.value || '';
   if (existing && existing.length > 0) {
-    var allowed = buildAllowedFromTypes(types,true), mismatch=false;
-    for (var i=0;i<existing.length;i++){ if (allowed.indexOf(existing[i])===-1){ mismatch=true; break; } }
+    var allowed = buildAllowedFromTypes(types, true), mismatch = false;
+    for (var i = 0; i < existing.length; i++) {
+      if (allowed.indexOf(existing[i]) === -1) { mismatch = true; break; }
+    }
 
     if (full != null && existing.length >= full) {
-      overlayTitle.textContent='Full Length Reached';
-      overlayMsg.textContent='Existing text length is already equal to or greater than Full Length. No more characters can be added.';
-      overlayClear.style.display='none'; overlayContinue.style.display='none'; overlayOK.style.display='inline-block';
-      overlayOK.onclick=function(){ hideOverlay(); };
-      showOverlay(); return;
+      overlayTitle.textContent = 'Full Length Reached';
+      overlayMsg.textContent = 'Existing text length is already equal to or greater than Full Length. No more characters can be added.';
+      overlayClear.style.display = 'none';
+      overlayContinue.style.display = 'none';
+      overlayOK.style.display = 'inline-block';
+      overlayOK.onclick = function () { hideOverlay(); };
+      showOverlay();
+      return;
     }
 
     if (mismatch) {
-      overlayTitle.textContent='Selected Characters do not match existing characters';
-      overlayMsg.textContent='Your existing text contains characters not in chosen types.';
-      overlayWarn.textContent="Selected characters don't match existing characters.";
-      overlayClear.style.display='inline-block'; overlayContinue.style.display='inline-block'; overlayOK.style.display='none';
-      overlayClear.onclick=function(){ mainText.value=''; performGenerate(types,count,full); hideOverlay(); };
-      overlayContinue.onclick=function(){ performGenerate(types,count,full,true); hideOverlay(); };
-      showOverlay(); return;
+      overlayTitle.textContent = 'Selected Characters do not match existing characters';
+      overlayMsg.textContent = 'Your existing text contains characters not in chosen types.';
+      overlayWarn.textContent = "Selected characters don't match existing characters.";
+      overlayClear.style.display = 'inline-block';
+      overlayContinue.style.display = 'inline-block';
+      overlayOK.style.display = 'none';
+      overlayClear.onclick = function () { mainText.value = ''; performGenerate(types, count, full); hideOverlay(); };
+      overlayContinue.onclick = function () { performGenerate(types, count, full, true); hideOverlay(); };
+      showOverlay();
+      return;
     }
 
-    overlayTitle.textContent='Existing Text Found';
-    overlayMsg.textContent='You have existing text (length '+existing.length+'). Clear or Continue?';
-    overlayWarn.textContent='';
-    overlayClear.style.display='inline-block'; overlayContinue.style.display='inline-block'; overlayOK.style.display='none';
-    overlayClear.onclick=function(){ mainText.value=''; performGenerate(types,count,full); hideOverlay(); };
-    overlayContinue.onclick=function(){ performGenerate(types,count,full,true); hideOverlay(); };
-    showOverlay(); return;
+    overlayTitle.textContent = 'Existing Text Found';
+    overlayMsg.textContent = 'You have existing text (length ' + existing.length + '). Clear or Continue?';
+    overlayWarn.textContent = '';
+    overlayClear.style.display = 'inline-block';
+    overlayContinue.style.display = 'inline-block';
+    overlayOK.style.display = 'none';
+    overlayClear.onclick = function () { mainText.value = ''; performGenerate(types, count, full); hideOverlay(); };
+    overlayContinue.onclick = function () { performGenerate(types, count, full, true); hideOverlay(); };
+    showOverlay();
+    return;
 
   } else {
-    performGenerate(types,count,full);
+    performGenerate(types, count, full);
   }
 }
+
 
 
 
@@ -572,19 +593,61 @@ function showInfo(msg) {
       function hideOverlay() { if (overlay) overlay.classList.add('hidden'); if (overlay) overlay.setAttribute('aria-hidden', 'true'); }
 
       function performGenerate(types, count, full, append) {
+  // Build allowed pool (array or string)
   var allowed = buildAllowedFromTypes(types, true);
+  if (!allowed || allowed.length === 0) {
+    return showError('Error: No characters available for generation.\n');
+  }
+
   var existing = mainText.value || '';
   var startLen = append ? existing.length : 0;
-  var targetLen = append ? (existing.length + (count || 0)) : (count || 0);
 
+  // Normalize inputs
+  var cnt = (count != null && !isNaN(count)) ? Number(count) : null;
+  var fl = (full != null && !isNaN(full)) ? Number(full) : null;
+
+  // Reject negative counts
+  if (cnt != null && cnt < 0) {
+    return showError('Error: Count cannot be negative.\n');
+  }
+  if (fl != null && fl < 0) {
+    return showError('Error: Full length cannot be negative.\n');
+  }
+
+  // Compute desired final length
+  var targetFinal = null;
+  if (append) {
+    if (cnt != null) {
+      targetFinal = existing.length + cnt;
+    } else if (fl != null) {
+      targetFinal = fl;
+    } else {
+      return showError('Error: Provide Count or Full length to append.\n');
+    }
+  } else {
+    if (cnt != null) {
+      targetFinal = cnt;
+    } else if (fl != null) {
+      targetFinal = fl;
+    } else {
+      return showError('Error: Provide Count or Full length to generate.\n');
+    }
+  }
+
+  // Cap at full if needed
   var capped = false;
-  if (full != null && targetLen > full) {
-    targetLen = full;
+  if (fl != null && targetFinal > fl) {
+    targetFinal = fl;
     capped = true;
   }
 
+  var need = append ? (targetFinal - existing.length) : targetFinal;
+  if (need <= 0) {
+    return showError('Error: Nothing to generate (count is 0 or no space left).\n');
+  }
+
   var res = append ? existing : '';
-  while (res.length < targetLen) {
+  for (var i = 0; i < need; i++) {
     res += allowed[Math.floor(Math.random() * allowed.length)];
   }
 
@@ -592,17 +655,21 @@ function showInfo(msg) {
   updateCharCount();
 
   var added = mainText.value.length - startLen;
-
-  if (capped) {
-    // Show both messages together with a line break
-    showInfo(
-      'Generation successful: ' + added + ' character(s) added.\n\n' +
-      'Note: Only appended up to Full Length (' + full + ' chars). Extra characters were not added.\n'
-    );
-  } else {
-    showInfo('Generation successful: ' + added + ' character(s) added.\n');
+  if (added === 0) {
+    return showError('Error: Nothing was generated (count is 0).\n');
   }
+
+  var msg = 'Generation successful: ' + added + ' characters added.\n';
+  if (capped) {
+    msg += 'Note: Only appended up to Full Length (' + fl + ' chars). Extra characters were not added.\n';
+  }
+  showInfo(msg);
 }
+
+
+
+
+
 
 
       function buildAllowedFromTypes(types, includeAll) {
@@ -652,93 +719,118 @@ function showInfo(msg) {
 
   var before = text.length;
   var opts = optionsArea.firstChild && optionsArea.firstChild.getValues ? optionsArea.firstChild.getValues() : {};
-  var mode=opts.mode, types=opts.types||[], custom=opts.custom||'';
+  var mode = opts.mode, types = opts.types || [], custom = opts.custom || '';
 
-  if (mode==='selection'){
-    if (!types||types.length===0) return showError('Error: Select at least one type to remove.\n');
+  if (mode === 'selection') {
+    if (!types || types.length === 0) return showError('Error: Select at least one type to remove.\n');
   } else {
-    if (!custom||custom.length===0) return showError('Error: Enter custom characters to remove.\n');
+    if (!custom || custom.length === 0) return showError('Error: Enter custom characters to remove.\n');
   }
 
-  var toRemove={};
-  if (mode==='selection'&&types&&types.length){
-    types.forEach(t=>{
-      var pool=CHARSETS[t]||'';
-      for(var k=0;k<pool.length;k++) toRemove[pool[k]]=true;
+  var toRemove = {};
+  if (mode === 'selection' && types && types.length) {
+    types.forEach(t => {
+      var pool = CHARSETS[t] || '';
+      for (var k = 0; k < pool.length; k++) toRemove[pool[k]] = true;
     });
   }
-  if (custom&&custom.length){
-    for(var m=0;m<custom.length;m++) toRemove[custom[m]]=true;
+  if (custom && custom.length) {
+    for (var m = 0; m < custom.length; m++) toRemove[custom[m]] = true;
   }
 
-  var out='';
-  for(var n=0;n<text.length;n++){ if(!toRemove[text[n]]) out+=text[n]; }
+  var out = '';
+  for (var n = 0; n < text.length; n++) {
+    if (!toRemove[text[n]]) out += text[n];
+  }
 
-  mainText.value=out;
+  mainText.value = out;
   updateCharCount();
-  var removed = before - out.length;
-  showInfo('Removal successful: '+removed+' character(s) removed.\n');
-}
 
+  var removed = before - out.length;
+  if (removed === 0) {
+    return showError('Error: No characters were removed (count is 0).\n');
+  }
+
+  if (removed < 0) {
+    return showError('Error: Removal count cannot be negative.\n');
+  }
+
+  showInfo('Removal successful: ' + removed + ' characters removed.\n');
+}
 
       // REPLACE logic
       function handleReplace() {
-  var text=mainText.value;
-  if (!text||!text.length) return showError('Error: Textarea is empty.\n');
+  var text = mainText.value;
+  if (!text || !text.length) return showError('Error: Textarea is empty.\n');
 
-  var before = text;
-  var opts=optionsArea.firstChild&&optionsArea.firstChild.getValues?optionsArea.firstChild.getValues():{};
+  var opts = optionsArea.firstChild && optionsArea.firstChild.getValues ? optionsArea.firstChild.getValues() : {};
 
-  if (opts.mode==='selection'){
-    var from=opts.from||[], to=opts.to||[];
-    if(!from||from.length===0) return showError('Select types to replace (from).\n');
-    if(!to||to.length===0) return showError('Select replacement types (to).\n');
+  if (opts.mode === 'selection') {
+    var from = opts.from || [], to = opts.to || [];
+    if (!from || from.length === 0) return showError('Error: Select types to replace (from).\n');
+    if (!to || to.length === 0) return showError('Error: Select replacement types (to).\n');
 
-    var fromSet={};
-    from.forEach(t=>{
-      var p=CHARSETS[t]||'';
-      for(var q=0;q<p.length;q++) fromSet[p[q]]=true;
+    var fromSet = {};
+    from.forEach(t => {
+      var p = CHARSETS[t] || '';
+      for (var q = 0; q < p.length; q++) fromSet[p[q]] = true;
     });
 
-    var toPool=to.map(t=>CHARSETS[t]||'').join('');
-    if(!toPool.length) return showError('Replacement pool is empty.\n');
+    var toPool = to.map(t => CHARSETS[t] || '').join('');
+    if (!toPool.length) return showError('Error: Replacement pool is empty.\n');
 
-    var outStr='';
-    var replacedCount=0;
-    for(var r=0;r<mainText.value.length;r++){
-      var ch2=mainText.value[r];
-      if(fromSet[ch2]){ outStr+=toPool[Math.floor(Math.random()*toPool.length)]; replacedCount++; }
-      else outStr+=ch2;
+    var outStr = '';
+    var replacedCount = 0;
+    for (var r = 0; r < mainText.value.length; r++) {
+      var ch2 = mainText.value[r];
+      if (fromSet[ch2]) {
+        outStr += toPool[Math.floor(Math.random() * toPool.length)];
+        replacedCount++;
+      } else {
+        outStr += ch2;
+      }
     }
 
-    mainText.value=outStr;
+    mainText.value = outStr;
     updateCharCount();
-    showInfo('Replace successful: '+replacedCount+' character(s) replaced.\n');
 
-  } else if (opts.mode==='custom'){
-    var pairs=opts.pairs||[];
-    if(!pairs||pairs.length===0) return showError('Add at least one replace pair.\n');
+    if (replacedCount === 0) {
+      return showError('Error: No replacements were made (count = 0).\n');
+    }
 
-    var txt=mainText.value;
-    var replacedCount=0;
-    pairs.forEach(p=>{
+    showInfo('Replace successful: ' + replacedCount + ' replacements made.\n');
+
+  } else if (opts.mode === 'custom') {
+    var pairs = opts.pairs || [];
+    if (!pairs || pairs.length === 0) return showError('Error: Add at least one replace pair.\n');
+
+    var txt = mainText.value;
+    var replacedCount = 0;
+
+    pairs.forEach(p => {
       if (!p.from) return;
-      var esc=p.from.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-      var re=new RegExp(esc,'g');
-      var beforeLen=txt.length;
-      txt=txt.replace(re,p.t||'');
-      replacedCount += (beforeLen - txt.length)/p.from.length;
+      var esc = p.from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var re = new RegExp(esc, 'g');
+
+      var matches = (txt.match(re) || []).length;
+      replacedCount += matches;
+
+      txt = txt.replace(re, p.t || '');
     });
 
-    mainText.value=txt;
+    mainText.value = txt;
     updateCharCount();
-    showInfo('Replace successful: '+replacedCount+' replacement(s) made.\n');
+
+    if (replacedCount === 0) {
+      return showError('Error: No replacements were made (count = 0).\n');
+    }
+
+    showInfo('Replace successful: ' + replacedCount + ' replacement(s) made.\n');
 
   } else {
-    showError('Unknown replace mode.\n');
+    showError('Error: Unknown replace mode.\n');
   }
 }
-
 
 
 
