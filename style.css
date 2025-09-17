@@ -97,7 +97,7 @@ label{display:flex;gap:8px;align-items:center;color:var(--muted)}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 
 /* Overlay (generate) */
-.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:70;background:linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0.6))}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:70;background:linear-gradient(240deg, rgba(0,0,0,0.25), rgba(0,0,0,0.95))}
 .overlay.hidden{display:none}
 .overlay-panel{background:var(--card);padding:16px;border-radius:12px;min-width:260px;max-width:520px;border:1px solid rgba(255,255,255,0.03)}
 
