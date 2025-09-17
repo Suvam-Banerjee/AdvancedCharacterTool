@@ -109,13 +109,36 @@
         prev.style.zIndex = '999';
         prev.style.background = (type === 'error') ? 'rgba(255,50,50,0.12)' : 'rgba(100,200,150,0.12)';
         document.body.appendChild(prev);
-        setTimeout(function () { prev.remove(); }, 2200);
+        setTimeout(function () { prev.remove(); }, 3500);
       }
 
       function showError(msg) {
-        if (!errorBox) return;
-        errorBox.textContent = msg;
-      }
+  if (!errorBox) return;
+  errorBox.textContent = msg;
+  errorBox.className = 'error';
+    // Auto-clear after 5 seconds
+  setTimeout(function () {
+    if (errorBox.className === 'info') {
+      errorBox.textContent = '';
+      errorBox.className = '';
+    }
+  }, 5000);
+}
+
+function showInfo(msg) {
+  if (!errorBox) return;
+  errorBox.textContent = msg;
+  errorBox.className = 'info';
+
+  // Auto-clear after 5 seconds
+  setTimeout(function () {
+    if (errorBox.className === 'info') {
+      errorBox.textContent = '';
+      errorBox.className = '';
+    }
+  }, 5000);
+}
+
 
       // Event bindings
       mainText.addEventListener('input', updateCharCount);
@@ -344,11 +367,27 @@
             var inpFrom = document.createElement('input'); inpFrom.className = 'input'; inpFrom.placeholder = 'from'; inpFrom.value = from;
             var inpTo = document.createElement('input'); inpTo.className = 'input'; inpTo.placeholder = 'to'; inpTo.value = to;
             var controls = document.createElement('div'); controls.className = 'pair-controls';
-            var addBtn = document.createElement('button'); addBtn.className = 'btn small'; addBtn.type = 'button'; addBtn.textContent = '+';
-            var remBtn = document.createElement('button'); remBtn.className = 'btn small secondary'; remBtn.type = 'button'; remBtn.textContent = '-';
-            addBtn.addEventListener('click', function () { addPair('', '', true); });
-            remBtn.addEventListener('click', function () { if (pr.parentNode) pr.parentNode.removeChild(pr); });
-            controls.appendChild(addBtn); controls.appendChild(remBtn);
+           // Create controls depending on whether this is the first row
+           if (pairsDiv.children.length === 0) {
+  // First row → only "+"
+  var addBtn = document.createElement('button');
+  addBtn.className = 'btn small';
+  addBtn.type = 'button';
+  addBtn.textContent = '+';
+  addBtn.addEventListener('click', function () { addPair('', '', true); });
+  controls.appendChild(addBtn);
+            } else {
+  // Subsequent rows → only "-"
+  var remBtn = document.createElement('button');
+  remBtn.className = 'btn small secondary';
+  remBtn.type = 'button';
+  remBtn.textContent = '-';
+  remBtn.addEventListener('click', function () {
+    if (pr.parentNode) pr.parentNode.removeChild(pr);
+  });
+  controls.appendChild(remBtn);
+}
+
 
             pr.appendChild(inpFrom); pr.appendChild(inpTo); pr.appendChild(controls);
             pairsDiv.appendChild(pr);
@@ -483,82 +522,88 @@
 
       // GENERATE logic
       function handleGenerate() {
-        var opts = optionsArea.firstChild && optionsArea.firstChild.getValues ? optionsArea.firstChild.getValues() : {};
-        var types = opts.types || [];
-        var count = opts.count == null ? null : opts.count;
-        var full = opts.full == null ? null : opts.full;
-        if ((count == null || isNaN(count)) && (full == null || isNaN(full))) {
-          return showError('Error: Count and Full length cannot be empty at the same time');
-        }
-        if (count != null && full != null && count > full) return showError('Error: Count is greater than Full length');
-        if (!types || types.length === 0) return showError('Error: Select at least one character type');
+  var opts = optionsArea.firstChild && optionsArea.firstChild.getValues ? optionsArea.firstChild.getValues() : {};
+  var types = opts.types || [], count = opts.count, full = opts.full;
+  if ((count == null || isNaN(count)) && (full == null || isNaN(full))) return showError('Error: Count and Full length cannot be empty at the same time.\n');
+  if (count != null && full != null && count > full) return showError('Error: Count is greater than Full length.\n');
+  if (!types || types.length === 0) return showError('Error: Select at least one character type.\n');
 
-        var existing = mainText.value || '';
-        if (existing.length > 0) {
-          var allowed = buildAllowedFromTypes(types, true);
-          var mismatch = false;
-          for (var i = 0; i < existing.length; i++) {
-            var ch = existing[i];
-            if (allowed.indexOf(ch) === -1) { mismatch = true; break; }
-          }
-          if (full != null && existing.length >= full) {
-            overlayTitle.textContent = 'Error';
-            overlayMsg.textContent = 'Existing text length is equal to or more than Full Length';
-            overlayWarn.textContent = '';
-            overlayClear.style.display = 'none'; overlayContinue.style.display = 'none'; overlayOK.style.display = 'inline-block';
-            overlayOK.onclick = function () { hideOverlay(); };
-            showOverlay();
-            return;
-          }
-          if (mismatch) {
-            overlayTitle.textContent = 'Selected Characters do not match existing characters';
-            overlayMsg.textContent = 'Your existing text contains characters that are not in the chosen character types.';
-            overlayWarn.textContent = "Selected characters don't match existing characters.";
-            overlayClear.style.display = 'inline-block'; overlayContinue.style.display = 'inline-block'; overlayOK.style.display = 'none';
-            overlayClear.onclick = function () { mainText.value = ''; performGenerate(types, count, full); hideOverlay(); };
-            overlayContinue.onclick = function () { performGenerate(types, count, full, true); hideOverlay(); };
-            showOverlay();
-            return;
-          }
-          overlayTitle.textContent = 'Existing Text Found';
-          overlayMsg.textContent = 'You have existing text (length ' + existing.length + '). Choose whether to clear and generate new text, or continue and append.';
-          overlayWarn.textContent = '';
-          overlayClear.style.display = 'inline-block'; overlayContinue.style.display = 'inline-block'; overlayOK.style.display = 'none';
-          overlayClear.onclick = function () { mainText.value = ''; performGenerate(types, count, full); hideOverlay(); };
-          overlayContinue.onclick = function () { performGenerate(types, count, full, true); hideOverlay(); };
-          showOverlay();
-          return;
-        } else {
-          performGenerate(types, count, full);
-        }
-      }
+  var existing = mainText.value || '';
+  if (existing && existing.length > 0) {
+    var allowed = buildAllowedFromTypes(types,true), mismatch=false;
+    for (var i=0;i<existing.length;i++){ if (allowed.indexOf(existing[i])===-1){ mismatch=true; break; } }
+
+    if (full != null && existing.length >= full) {
+      overlayTitle.textContent='Full Length Reached';
+      overlayMsg.textContent='Existing text length is already equal to or greater than Full Length. No more characters can be added.';
+      overlayClear.style.display='none'; overlayContinue.style.display='none'; overlayOK.style.display='inline-block';
+      overlayOK.onclick=function(){ hideOverlay(); };
+      showOverlay(); return;
+    }
+
+    if (mismatch) {
+      overlayTitle.textContent='Selected Characters do not match existing characters';
+      overlayMsg.textContent='Your existing text contains characters not in chosen types.';
+      overlayWarn.textContent="Selected characters don't match existing characters.";
+      overlayClear.style.display='inline-block'; overlayContinue.style.display='inline-block'; overlayOK.style.display='none';
+      overlayClear.onclick=function(){ mainText.value=''; performGenerate(types,count,full); hideOverlay(); };
+      overlayContinue.onclick=function(){ performGenerate(types,count,full,true); hideOverlay(); };
+      showOverlay(); return;
+    }
+
+    overlayTitle.textContent='Existing Text Found';
+    overlayMsg.textContent='You have existing text (length '+existing.length+'). Clear or Continue?';
+    overlayWarn.textContent='';
+    overlayClear.style.display='inline-block'; overlayContinue.style.display='inline-block'; overlayOK.style.display='none';
+    overlayClear.onclick=function(){ mainText.value=''; performGenerate(types,count,full); hideOverlay(); };
+    overlayContinue.onclick=function(){ performGenerate(types,count,full,true); hideOverlay(); };
+    showOverlay(); return;
+
+  } else {
+    performGenerate(types,count,full);
+  }
+}
+
+
+
+
 
       function showOverlay() { if (overlay) overlay.classList.remove('hidden'); if (overlay) overlay.setAttribute('aria-hidden', 'false'); }
       function hideOverlay() { if (overlay) overlay.classList.add('hidden'); if (overlay) overlay.setAttribute('aria-hidden', 'true'); }
 
       function performGenerate(types, count, full, append) {
-        append = !!append;
-        var existingLen = append ? mainText.value.length : 0;
-        var targetLen = null;
-        if (count != null && full != null) {
-          targetLen = (append ? existingLen : 0) + count;
-        } else if (count != null) {
-          targetLen = (append ? existingLen : 0) + count;
-        } else if (full != null) {
-          targetLen = full;
-        }
-        if (full != null && targetLen > full) {
-          return showError('Error: Result would exceed Full length');
-        }
-        var allowed = buildAllowedFromTypes(types);
-        if (!allowed.length) return showError('No characters available for generation');
-        var need = targetLen - (append ? mainText.value.length : 0);
-        if (need <= 0) return showError('Nothing to generate (target length reached)');
-        var result = generateString(types, need);
-        if (append) mainText.value = mainText.value + result;
-        else mainText.value = result;
-        updateCharCount();
-      }
+  var allowed = buildAllowedFromTypes(types, true);
+  var existing = mainText.value || '';
+  var startLen = append ? existing.length : 0;
+  var targetLen = append ? (existing.length + (count || 0)) : (count || 0);
+
+  var capped = false;
+  if (full != null && targetLen > full) {
+    targetLen = full;
+    capped = true;
+  }
+
+  var res = append ? existing : '';
+  while (res.length < targetLen) {
+    res += allowed[Math.floor(Math.random() * allowed.length)];
+  }
+
+  mainText.value = res;
+  updateCharCount();
+
+  var added = mainText.value.length - startLen;
+
+  if (capped) {
+    // Show both messages together with a line break
+    showInfo(
+      'Generation successful: ' + added + ' character(s) added.\n\n' +
+      'Note: Only appended up to Full Length (' + full + ' chars). Extra characters were not added.\n'
+    );
+  } else {
+    showInfo('Generation successful: ' + added + ' character(s) added.\n');
+  }
+}
+
 
       function buildAllowedFromTypes(types, includeAll) {
         includeAll = !!includeAll;
@@ -602,77 +647,100 @@
 
       // REMOVE logic
       function handleRemove() {
-        var opts = optionsArea.firstChild && optionsArea.firstChild.getValues ? optionsArea.firstChild.getValues() : {};
-        var mode = opts.mode;
-        var types = opts.types || [];
-        var custom = opts.custom || '';
-        if (mode === 'selection') {
-          if (!types || types.length === 0) return showError('Error: Select at least one type to remove');
-        } else {
-          if (!custom || custom.length === 0) return showError('Error: Enter custom characters to remove');
-        }
-        var text = mainText.value;
-        if (!text) return showError('Textarea is empty');
-        var toRemove = {};
-        if (mode === 'selection' && types && types.length) {
-          types.forEach(function (t) {
-            var pool = CHARSETS[t] || '';
-            for (var k = 0; k < pool.length; k++) toRemove[pool[k]] = true;
-          });
-        }
-        if (custom && custom.length) {
-          for (var m = 0; m < custom.length; m++) toRemove[custom[m]] = true;
-        }
-        var out = '';
-        for (var n = 0; n < text.length; n++) {
-          var ch = text[n];
-          if (!toRemove[ch]) out += ch;
-        }
-        mainText.value = out;
-        updateCharCount();
-      }
+  var text = mainText.value;
+  if (!text || !text.length) return showError('Error: Textarea is empty.\n');
+
+  var before = text.length;
+  var opts = optionsArea.firstChild && optionsArea.firstChild.getValues ? optionsArea.firstChild.getValues() : {};
+  var mode=opts.mode, types=opts.types||[], custom=opts.custom||'';
+
+  if (mode==='selection'){
+    if (!types||types.length===0) return showError('Error: Select at least one type to remove.\n');
+  } else {
+    if (!custom||custom.length===0) return showError('Error: Enter custom characters to remove.\n');
+  }
+
+  var toRemove={};
+  if (mode==='selection'&&types&&types.length){
+    types.forEach(t=>{
+      var pool=CHARSETS[t]||'';
+      for(var k=0;k<pool.length;k++) toRemove[pool[k]]=true;
+    });
+  }
+  if (custom&&custom.length){
+    for(var m=0;m<custom.length;m++) toRemove[custom[m]]=true;
+  }
+
+  var out='';
+  for(var n=0;n<text.length;n++){ if(!toRemove[text[n]]) out+=text[n]; }
+
+  mainText.value=out;
+  updateCharCount();
+  var removed = before - out.length;
+  showInfo('Removal successful: '+removed+' character(s) removed.\n');
+}
+
 
       // REPLACE logic
       function handleReplace() {
-        var opts = optionsArea.firstChild && optionsArea.firstChild.getValues ? optionsArea.firstChild.getValues() : {};
-        if (opts.mode === 'selection') {
-          var from = opts.from || [];
-          var to = opts.to || [];
-          if (!from || from.length === 0) return showError('Select types to replace (from)');
-          if (!to || to.length === 0) return showError('Select replacement types (to)');
-          var fromSet = {};
-          from.forEach(function (t) {
-            var p = CHARSETS[t] || '';
-            for (var q = 0; q < p.length; q++) fromSet[p[q]] = true;
-          });
-          var toPool = to.map(function (t) { return CHARSETS[t] || ''; }).join('');
-          if (!toPool.length) return showError('Replacement pool is empty');
-          var outStr = '';
-          for (var r = 0; r < mainText.value.length; r++) {
-            var ch2 = mainText.value[r];
-            if (fromSet[ch2]) {
-              outStr += toPool[Math.floor(Math.random() * toPool.length)];
-            } else outStr += ch2;
-          }
-          mainText.value = outStr;
-          updateCharCount();
-        } else if (opts.mode === 'custom') {
-          var pairs = opts.pairs || [];
-          if (!pairs || pairs.length === 0) return showError('Add at least one replace pair');
-          var txt = mainText.value;
-          pairs.forEach(function (p) {
-            var from = p.from || '';
-            var to2 = p.t || '';
-            var esc = from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            var re = new RegExp(esc, 'g');
-            txt = txt.replace(re, to2);
-          });
-          mainText.value = txt;
-          updateCharCount();
-        } else {
-          showError('Unknown replace mode');
-        }
-      }
+  var text=mainText.value;
+  if (!text||!text.length) return showError('Error: Textarea is empty.\n');
+
+  var before = text;
+  var opts=optionsArea.firstChild&&optionsArea.firstChild.getValues?optionsArea.firstChild.getValues():{};
+
+  if (opts.mode==='selection'){
+    var from=opts.from||[], to=opts.to||[];
+    if(!from||from.length===0) return showError('Select types to replace (from).\n');
+    if(!to||to.length===0) return showError('Select replacement types (to).\n');
+
+    var fromSet={};
+    from.forEach(t=>{
+      var p=CHARSETS[t]||'';
+      for(var q=0;q<p.length;q++) fromSet[p[q]]=true;
+    });
+
+    var toPool=to.map(t=>CHARSETS[t]||'').join('');
+    if(!toPool.length) return showError('Replacement pool is empty.\n');
+
+    var outStr='';
+    var replacedCount=0;
+    for(var r=0;r<mainText.value.length;r++){
+      var ch2=mainText.value[r];
+      if(fromSet[ch2]){ outStr+=toPool[Math.floor(Math.random()*toPool.length)]; replacedCount++; }
+      else outStr+=ch2;
+    }
+
+    mainText.value=outStr;
+    updateCharCount();
+    showInfo('Replace successful: '+replacedCount+' character(s) replaced.\n');
+
+  } else if (opts.mode==='custom'){
+    var pairs=opts.pairs||[];
+    if(!pairs||pairs.length===0) return showError('Add at least one replace pair.\n');
+
+    var txt=mainText.value;
+    var replacedCount=0;
+    pairs.forEach(p=>{
+      if (!p.from) return;
+      var esc=p.from.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      var re=new RegExp(esc,'g');
+      var beforeLen=txt.length;
+      txt=txt.replace(re,p.t||'');
+      replacedCount += (beforeLen - txt.length)/p.from.length;
+    });
+
+    mainText.value=txt;
+    updateCharCount();
+    showInfo('Replace successful: '+replacedCount+' replacement(s) made.\n');
+
+  } else {
+    showError('Unknown replace mode.\n');
+  }
+}
+
+
+
 
       // initialize render and counters
       renderOptions();
