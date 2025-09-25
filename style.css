@@ -137,3 +137,25 @@ label{display:flex;gap:8px;align-items:center;color:var(--muted)}
 #errorBox.info {
   color: #2d7a46;
 }
+
+/* Style for the modal close button */
+#closeModal {
+  background: rgba(0, 0, 0, 0.15);  /* adjustable background (semi-transparent black) */
+  color: white;                    /* white cross */
+  border: none;
+  border-radius: 50%;               /* circular button */
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Glow effect on hover */
+#closeModal:hover {
+  background: rgba(0, 0, 0, 0.85);   /* darker on hover */
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.8); /* white glow */
+}

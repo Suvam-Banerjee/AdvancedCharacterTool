@@ -650,9 +650,30 @@ function showInfo(msg) {
   }
 
   var res = append ? existing : '';
-  for (var i = 0; i < need; i++) {
-    res += allowed[Math.floor(Math.random() * allowed.length)];
-  }
+var requiredChars = [];
+
+// Step 1: Ensure one char from each selected type if space allows
+if (types && types.length && need >= types.length) {
+  types.forEach(function (t) {
+    var pool = CHARSETS[t] || '';
+    if (pool.length > 0) {
+      requiredChars.push(pool[Math.floor(Math.random() * pool.length)]);
+    }
+  });
+}
+
+// Step 2: Fill the rest randomly from the full pool
+var remaining = need - requiredChars.length;
+for (var i = 0; i < remaining; i++) {
+  res += allowed[Math.floor(Math.random() * allowed.length)];
+}
+
+// Step 3: Add the required chars
+res += requiredChars.join('');
+
+// Step 4: Shuffle so required chars are spread randomly
+res = res.split('').sort(function () { return Math.random() - 0.5; }).join('');
+
 
   mainText.value = res;
   updateCharCount();
@@ -662,17 +683,12 @@ function showInfo(msg) {
     return showError('Error: Nothing was generated.\n');
   }
 
-  var msg = 'Generation successful: ' + added + ' characters added.\n';
+  var msg = 'Generation successful: ' + added + ' characters added.\n\n';
   if (capped) {
-    msg += 'Note: Only appended up to Full Length (' + fl + ' chars). Extra characters were not added.\n';
+    msg += 'Note: Only appended up to (' + fl + ' chars).\n\nExtra characters were not added.\n\n';
   }
   showInfo(msg);
 }
-
-
-
-
-
 
 
       function buildAllowedFromTypes(types, includeAll) {
