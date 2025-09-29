@@ -5,12 +5,91 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Advanced Character Tool</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Popup container - initial hidden */
+    #betaPopup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    #betaPopup.show {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Popup content box */
+    #betaPopupContent {
+      background: black;
+      padding: 20px 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      max-width: 400px;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+
+    #betaPopupContent h2 {
+      margin-top: 0;
+      color: #d9534f;
+    }
+
+    #betaPopupContent p {
+      margin: 20px 0;
+      font-size: 16px;
+      color: #333;
+    }
+
+    #betaPopupContent button {
+      padding: 8px 20px;
+      font-size: 14px;
+      border: none;
+      background-color: #5cb85c;
+      color: black;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #betaPopupContent button:hover {
+      background-color: #4cae4c;
+    }
+  </style>
 </head>
 <body>
+  <!-- Beta Popup -->
+  <div id="betaPopup">
+    <div id="betaPopupContent">
+      <h2>Beta Version</h2>
+      <p>The Day/Night toggle icon is in beta stage only icon click will work now with no change in page itself.</p>
+      <button id="closeBetaBtn">OK</button>
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      // Show the popup on page load
+      const popup = document.getElementById('betaPopup');
+      popup.classList.add('show');
+
+      // Close button event
+      document.getElementById('closeBetaBtn').onclick = function() {
+        popup.classList.remove('show');
+      };
+    };
+  </script>
   <main class="app">
     <header class="app-header">
       <h1>Advanced Character Tool</h1>
-      <br>
+      <small style="font-size: 0.8em;font-weight: normal; color: grey;">v2.1 (Beta)</small>
     </header>
 
     <!-- visible error banner (hidden by default) -->
@@ -97,6 +176,54 @@
       </div>
     </div>
   </div>
+
+
+
+  <!-- day night toggle button -->
+
+<link rel="stylesheet" href="day_night_toggle/day_night_toggle.css" />
+</head>
+<body>
+
+  <div id="dayNightToggleContainer"></div>
+
+  <script src="day_night_toggle/day_night_toggle.js" defer></script>
+  <script>
+    fetch('day_night_toggle/day_night_toggle.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('dayNightToggleContainer').innerHTML = html;
+        if (typeof initializeDayNightToggle === 'function') {
+          initializeDayNightToggle();
+        }
+      })
+      .catch(console.error);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   <script src="code.js"></script>
 </body>
