@@ -4,7 +4,7 @@ function initializeDayNightToggle() {
   const moonIcon = document.querySelector('.icon.moon');
   const orbitWrapper = document.querySelector('.orbit-wrapper');
 
-  let rotationAngle = 0;
+  let rotationAngle = -180; // Start at -180deg because moon is default checked
 
   const styles = getComputedStyle(document.querySelector('.theme-toggle'));
   const desiredTranslateX = styles.getPropertyValue('--translate-x').trim() || '8px';
@@ -36,6 +36,7 @@ function initializeDayNightToggle() {
     updateIcons();
   });
 
-  // Initialize icons and pointer events on load
+  // Initialize rotation and icon states on load
+  orbitWrapper.style.transform = `translate(${desiredTranslateX}, ${desiredTranslateY}) rotate(${rotationAngle}deg)`;
   updateIcons();
 }
