@@ -4,11 +4,12 @@ function initializeDayNightToggle() {
   const moonIcon = document.querySelector('.icon.moon');
   const orbitWrapper = document.querySelector('.orbit-wrapper');
 
-  let rotationAngle = -180; // Start at -180deg because moon is default checked
+  // Start rotation angle at 0 so moon starts at top position
+  let rotationAngle = 0;
 
   const styles = getComputedStyle(document.querySelector('.theme-toggle'));
-  const desiredTranslateX = styles.getPropertyValue('--translate-x').trim() || '8px';
-  const desiredTranslateY = styles.getPropertyValue('--translate-y').trim() || '8px';
+  const desiredTranslateX = styles.getPropertyValue('--translate-x').trim() || '15px';
+  const desiredTranslateY = styles.getPropertyValue('--translate-y').trim() || '22px';
 
   function updateIcons() {
     if (themeSwitch.checked) {
@@ -30,13 +31,18 @@ function initializeDayNightToggle() {
     }
   }
 
+  function setRotation(angle) {
+    orbitWrapper.style.transform = `translate(${desiredTranslateX}, ${desiredTranslateY}) rotate(${angle}deg)`;
+  }
+
+  // On each toggle, rotate anticlockwise by -180 degrees cumulatively
   themeSwitch.addEventListener('change', () => {
-    rotationAngle -= 180; // accumulate anticlockwise rotation
-    orbitWrapper.style.transform = `translate(${desiredTranslateX}, ${desiredTranslateY}) rotate(${rotationAngle}deg)`;
+    rotationAngle -= 180;
+    setRotation(rotationAngle);
     updateIcons();
   });
 
-  // Initialize rotation and icon states on load
-  orbitWrapper.style.transform = `translate(${desiredTranslateX}, ${desiredTranslateY}) rotate(${rotationAngle}deg)`;
+  // Initialize starting rotation and icons (moon at top)
+  setRotation(rotationAngle);
   updateIcons();
 }
